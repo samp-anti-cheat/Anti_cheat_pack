@@ -2,7 +2,7 @@
 
 [![sampctl](https://shields.southcla.ws/badge/sampctl-Anti_cheat_pack-2f2f2f.svg?style=for-the-badge)](https://github.com/RogueDrifter/Anti_cheat_pack)
 
->This is a pack of 12 anticheats and 3 helping systems which you can control through callbacks mentioned
+>This is a pack of 12 anticheats which you can control through callbacks mentioned
 >in the includes and the test.pwn file.
 >
 >
@@ -57,15 +57,6 @@ sampctl package run
 >rVM //Anti illegal car mods -Emmet_
 
 >rAcs //Anti car spam - Rogue
-
->rED  //Anti dialog spoof/crash- Emmet_ (easyDialog)
-
-*Includes that provide spam/bug protection (not worth a ban)
->AntiSpam //Anti chat spam- Rogue
-
->AntiSba //Anti slide bug abuse- Rogue
-
->Flaggers //Lag spike\desnyc detector- Rogue
 
 *Anti cheats that do require include in all scripts and only edit through GM
 >AntiJC //Anti jetpack cheats- Rogue

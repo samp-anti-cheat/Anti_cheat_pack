@@ -75,7 +75,7 @@ sampctl package run
 
 ## Updating:
 
-To update simply run the package:
+To update, simply run the package:
 
 ```bash
 sampctl package ensure

@@ -1,12 +1,16 @@
 /*
 Anti car troll include by RogueDrifter Jan 15th 2018
 -=-=-=-=-=-
+
 Last updated on Apr 7th.
 -=-=-=-=-=-=-=-=-=-=-=-=
+
 Callback:
 -=-=-=-=-
+
 OnPlayerCarTroll(playerid, vehicleid, trolledid, trolltype);
 -=-=-=-=-=-=-=-=--=-=-=-=
+
 Type 1: Teleporting between vehicles (can give cheaters chance to control other's players) (also lag cheat detected here).
 Type 2: Control other player's cars or spin/rotate (Done by checking the player's actual vehicle).
 Type 3: Fast kick/rotate or teleporting inside drivers. (detectd by position change)
@@ -25,7 +29,7 @@ Type 7: Teleporting inside a vehicle illegally as a passenger (without PutPlayer
 #include <a_samp>
  
 #if !defined FILTERSCRIPT
- 
+
 enum ActPData
 {
     bool:ActAntiSpam,
@@ -40,6 +44,7 @@ enum ActPData
     bool:ActJustDied,
     bool:ActDoubleProtec,
     bool:ActFFProtec,
+    bool:ActDetectSpam,
 
     Float:ActPX,
     Float:ActPY,
@@ -133,9 +138,9 @@ forward OnGameModeExitACT();
     forward OnUnoccupiedVehicleUpdateAct(vehicleid, playerid, passenger_seat, Float:new_x, Float:new_y, Float:new_z, Float:vel_x, Float:vel_y, Float:vel_z);
 #endif
 
-#if defined ManualUse
-static rAct_Detected(playerid, vehicleid, trolledid, trolltype)
+stock rAct_Detected(playerid, vehicleid, trolledid, trolltype)
 {
+    if(ActPlayer[playerid][ActDetectSpam]) return 0;
     if(!ActPlayer[playerid][ActCheater]) 
     {
     	if(trolledid != INVALID_PLAYER_ID)
@@ -147,20 +152,20 @@ static rAct_Detected(playerid, vehicleid, trolledid, trolltype)
     		ActPlayer[playerid][ActCheater]  = true;
     	}
     }
-    #if defined OnPlayerCarTroll
+
     if(trolledid != INVALID_PLAYER_ID)
     {
     	if(!ActPlayer[trolledid][ActCheater]) OnPlayerCarTroll(playerid,vehicleid, trolledid, trolltype);
     }
     else OnPlayerCarTroll(playerid,vehicleid, trolledid, trolltype);
-    #endif
+    ActPlayer[playerid][ActDetectSpam] = true;
+    SetTimerEx("ActResetHandler", 3000, false, "ii", playerid, 14);
     return 1;
 }
 
-#else
-
-static rAct_Detected(playerid)
+stock rAct_DetectedN(playerid)
 {
+    if(ActPlayer[playerid][ActDetectSpam]) return 0;
     new ACT_pName[MAX_PLAYER_NAME],actmsg[80];
     GetPlayerName(playerid,ACT_pName,sizeof(ACT_pName));
     #if defined BanVersion
@@ -170,10 +175,10 @@ static rAct_Detected(playerid)
     #endif
     SendClientMessageToAll(0xFF0000A,actmsg);
     SetTimerEx("ActDelay",250,false,"i",playerid);
-
+    ActPlayer[playerid][ActDetectSpam] = true;
+    SetTimerEx("ActResetHandler", 3000, false, "ii", playerid, 14);
     return 1;
 }
-#endif
 
 static ActInvalidAction(playerid)
 {
@@ -245,10 +250,10 @@ public ActDelayState(playerid, delaytype)
             {                
                 ActPlayer[playerid][ActAntiSpam]=true;
                 SetTimerEx("ActResetHandler",2500,false,"ii",playerid, 2);
-                #if defined ManualUse
+                #if defined OnPlayerCarTroll
                 rAct_Detected(playerid, GetPlayerVehicleID(playerid), INVALID_PLAYER_ID, 4);
                 #else
-                rAct_Detected(playerid);
+                rAct_DetectedN(playerid);
                 #endif
             }
             else if(ActPlayer[playerid][ActProtectFalse]) ActPlayer[playerid][ActProtectFalse] = false;
@@ -259,10 +264,10 @@ public ActDelayState(playerid, delaytype)
             {            
                 ActPlayer[playerid][ActAntiSpam]=true;
                 SetTimerEx("ActResetHandler",2500,false,"ii",playerid, 2);
-                #if defined ManualUse
+                #if defined OnPlayerCarTroll
                 rAct_Detected(playerid, GetPlayerVehicleID(playerid), INVALID_PLAYER_ID, 7);
                 #else
-                rAct_Detected(playerid);
+                rAct_DetectedN(playerid);
                 #endif
             }
             else if(ActPlayer[playerid][ActProtectFalse]) ActPlayer[playerid][ActProtectFalse] = false;
@@ -273,7 +278,7 @@ public ActDelayState(playerid, delaytype)
 
 public ActSafeReset()
 {
-    static const tmp2[MAX_VEHICLES] = {INVALID_PLAYER_ID,...}; 
+    new const tmp2[MAX_VEHICLES] = {INVALID_PLAYER_ID,...}; 
     memcpy(ActVehicle[MAX_VEHICLES-1][VehicleTempOwner], tmp2, 0, MAX_VEHICLES * 4); 
 
     for(new i, j = GetPlayerPoolSize(); i <= j; i++) 
@@ -285,12 +290,8 @@ public ActSafeReset()
     return 1;
 }
  
-#if defined ManualUse
     #if defined OnPlayerCarTroll
- 
-    forward OnPlayerCarTroll(playerid,vehicleid, trolledid, trolltype);// Only use if you defined ManualUse
-
-    #endif
+    forward OnPlayerCarTroll(playerid,vehicleid, trolledid, trolltype);
 
 #else
  
@@ -320,7 +321,7 @@ public OnPlayerUpdate(playerid)
     {
         ActPlayer[playerid][ActRealCar] = ActVeh;
 
-        #if defined ManualUse
+        #if defined OnPlayerCarTroll
         if(ActVehicle[ActVeh][VehicleTempOwner] != playerid &&  ActVehicle[ActVeh][VehicleTempOwner] != INVALID_PLAYER_ID) 
         {
             rAct_Detected(playerid, ActVeh, ActVehicle[ActVeh][VehicleTempOwner], 2);
@@ -328,7 +329,7 @@ public OnPlayerUpdate(playerid)
         else rAct_Detected(playerid, ActVeh, INVALID_PLAYER_ID, 2);
 
         #else
-        rAct_Detected(playerid);
+        rAct_DetectedN(playerid);
         #endif
 
         SetVehicleToRespawn(ActVeh);
@@ -352,7 +353,7 @@ public OnPlayerUpdate(playerid)
         {            
             ActPlayer[playerid][ActOVeh] = ActVeh;
 
-            #if defined ManualUse
+            #if defined OnPlayerCarTroll
             if(ActVehicle[ActVeh][VehicleTempOwner] != playerid &&  ActVehicle[ActVeh][VehicleTempOwner] != INVALID_PLAYER_ID) 
             {
                 rAct_Detected(playerid, ActVeh, ActVehicle[ActVeh][VehicleTempOwner], 1);
@@ -360,7 +361,7 @@ public OnPlayerUpdate(playerid)
             else rAct_Detected(playerid, ActVeh, INVALID_PLAYER_ID, 1);
 
             #else
-            rAct_Detected(playerid);
+            rAct_DetectedN(playerid);
             #endif
 
             SetVehicleToRespawn(ActVeh);
@@ -376,10 +377,10 @@ public OnPlayerUpdate(playerid)
             if(!ActPlayer[playerid][ActFixRJackBug] && !IsPlayerNearVehicle(playerid, x, 5.0) && !ActIsPEnExCar(playerid) && !ActPlayer[playerid][ActDoubleProtec] && !ActPlayer[playerid][ActFFProtec])
             {
                 ActPlayer[playerid][ActRemoteJack] = 2;
-                #if defined ManualUse
+                #if defined OnPlayerCarTroll
                 rAct_Detected(playerid,  ActPlayer[playerid][ActOVeh], INVALID_PLAYER_ID, 5);
                 #else
-                rAct_Detected(playerid);
+                rAct_DetectedN(playerid);
                 #endif
             }
             else if(GetPlayerState(playerid) == 2) ActPlayer[playerid][ActRemoteJack] = 2;
@@ -409,10 +410,10 @@ public OnPlayerUpdate(playerid)
 
                 SetTimerEx("ActResetHandler", 1500, false, "ii", i, 7);
                 SetTimerEx("ActResetHandler",1500,false,"ii",i, 2);
-                #if defined ManualUse
+                #if defined OnPlayerCarTroll
                 rAct_Detected(playerid,  GetPlayerVehicleID(i), i, 3);
                 #else
-                rAct_Detected(playerid);
+                rAct_DetectedN(playerid);
                 #endif
             }
         }
@@ -524,51 +525,51 @@ public OnPlayerSpawn(playerid)
 public OnUnoccupiedVehicleUpdate(vehicleid, playerid, passenger_seat, Float:new_x, Float:new_y, Float:new_z, Float:vel_x, Float:vel_y, Float:vel_z)
 {
     new Float:TempFloatX, Float:TempFloatY, Float:TempFloatZ;
-
-    for(new i, j = GetPlayerPoolSize(); i <= j; i++)
+    new ActTempState, ActTempCar;
+    if(vel_z >= 300.000000)
     {
-        new ActTempState = GetPlayerState(i);
-        new ActTempCar = GetPlayerVehicleID(i);
-
-        if(!IsPlayerConnected(i)) continue;
-        if(IsPlayerInRangeOfPoint(i, 4.0, new_x, new_y, new_z) && vel_z >= 300.000000)
+        SetVehicleToRespawn(vehicleid);
+        GetVehiclePos(vehicleid, TempFloatX, TempFloatY, TempFloatZ);
+        for(new x; x < MAX_VEHICLES; x++)
         {
-            if(i == playerid) 
+            if(!IsValidVehicle(x) || ActVehicle[x][VehicleTempOwner] != INVALID_PLAYER_ID) continue;
+            if(GetVehicleDistanceFromPoint(vehicleid, TempFloatX, TempFloatY, TempFloatZ) <= 20) SetVehicleToRespawn(x);
+        }
+        for(new i, j = GetPlayerPoolSize(); i <= j; i++)
+        {
+            ActTempState = GetPlayerState(i);
+            ActTempCar = GetPlayerVehicleID(i);
+
+            if(!IsPlayerConnected(i)) continue;
+            if(IsPlayerInRangeOfPoint(i, 4.0, new_x, new_y, new_z))
             {
-                SetVehicleToRespawn(vehicleid);
-            }
-            else if (i != playerid)
-            {
-                if(ActTempState != PLAYER_STATE_ONFOOT) GetVehiclePos(ActTempCar, TempFloatX, TempFloatY, TempFloatZ);
-                SetPlayerHealth(playerid, 0.0);
-                SetVehicleToRespawn(vehicleid);
-
-                if(ActTempState == PLAYER_STATE_ONFOOT && !ActPlayer[i][ActFixCars])
+                if (i != playerid)
                 {
-                    ActPlayer[i][ActFixCars] = true,
-                    TogglePlayerControllable(i, 0),
-                    SetTimerEx("ActResetHandler", 2500, false, "ii", i, 7);
-                }
-                else if(ActTempState != PLAYER_STATE_ONFOOT && !ActPlayer[i][ActFixCars])
-                {
-                    SetVehicleToRespawn(ActTempCar);
+                    if(ActTempState != PLAYER_STATE_ONFOOT) GetVehiclePos(ActTempCar, TempFloatX, TempFloatY, TempFloatZ);
+                    SetPlayerHealth(playerid, 0.0);
 
-                    ActPlayer[i][ActFixCars] = true,
-                    TogglePlayerControllable(i, 0),
-                    SetTimerEx("ActResetHandler", 2500, false, "ii", i, 7);
-
-                    for(new x; x < MAX_VEHICLES; x++)
+                    if(ActTempState == PLAYER_STATE_ONFOOT && !ActPlayer[i][ActFixCars])
                     {
-                        if(!IsValidVehicle(x) || ActVehicle[x][VehicleTempOwner] != INVALID_PLAYER_ID || x == ActTempCar) continue;
-                        if(GetVehicleDistanceFromPoint(vehicleid, TempFloatX, TempFloatY, TempFloatZ) <= 20) SetVehicleToRespawn(x);
+                        ActPlayer[i][ActFixCars] = true,
+                        TogglePlayerControllable(i, 0),
+                        SetTimerEx("ActResetHandler", 2500, false, "ii", i, 7);
                     }
-                }
+                    else if(ActTempState != PLAYER_STATE_ONFOOT && !ActPlayer[i][ActFixCars])
+                    {
+                        SetVehicleToRespawn(ActTempCar);
 
-                #if defined ManualUse
-                rAct_Detected(playerid, vehicleid, i, 6);
-                #else
-                rAct_Detected(playerid);
-                #endif
+                        ActPlayer[i][ActFixCars] = true,
+                        TogglePlayerControllable(i, 0),
+                        SetTimerEx("ActResetHandler", 2500, false, "ii", i, 7);
+                    }
+
+                    #if defined OnPlayerCarTroll
+                    rAct_Detected(playerid, vehicleid, i, 6);
+                    #else
+                    rAct_DetectedN(playerid);
+                    #endif
+                    break;
+                }
             }
         }
     }
@@ -668,10 +669,10 @@ public OnPlayerExitVehicle(playerid,vehicleid)
 public OnPlayerDisconnect(playerid, reason)
 {
     KillTimer(ActPlayer[playerid][ActTimer]);
-
     static gpVehicleID;
     gpVehicleID = GetPlayerVehicleID(playerid);
 
+    ActPlayer[playerid][ActDetectSpam]  = false;
     ActPlayer[playerid][ActFFProtec]    = false;
     ActPlayer[playerid][ActJustDied]    = false;
     ActPlayer[playerid][ActSPrtct]      = false;
@@ -755,6 +756,10 @@ public ActResetHandler(handleid, handletype)
         case 13:
         {
             ActPlayer[handleid][ActFFProtec]     = false;
+        }
+        case 14:
+        {
+            ActPlayer[handleid][ActDetectSpam]   = false;
         }
     }
     return 1;

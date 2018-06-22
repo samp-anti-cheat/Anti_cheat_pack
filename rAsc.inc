@@ -13,6 +13,8 @@ speedtype 2 = in plane
 -=-=-=-=-
 */
 
+#if !defined FILTERSCRIPT 
+
 #include <a_samp>
 
 #if defined _rAntiSpeed_Included
@@ -23,7 +25,7 @@ speedtype 2 = in plane
 #define ASC_MAX_FOOT_SPEED 110
 #define ASC_MAX_CAR_SPEED 290
 #define ASC_MAX_PLANE_SPEED 340
-#define ASC_MAX_SPEED_WARNS 3
+#define ASC_MAX_SPEED_WARNS 2
 
 forward ASC_AntiSpeedCheats(playerid);
 forward ASC_ResetCall(playerid);
@@ -84,7 +86,7 @@ public ASC_ResetCall(playerid) 		 return ASC_PlayerASpam{playerid} = false;
 public ASC_RFallTP(playerid) 		 return ASC_PlayerFalling{playerid} = 0;
 public ASC_AntiSpeedCheats(playerid)
 {
-	static Float:AscX, Float:AscY, Float:AscZ;
+	new Float:AscX, Float:AscY, Float:AscZ;
 	if(ASC_PlayerASpam{playerid}) return 0;
 	GetPlayerPos(playerid, AscX, AscY, AscZ);
 
@@ -145,7 +147,7 @@ public ASC_AntiSpeedCheats(playerid)
 		}
 	}
 
-	GetPlayerPos(playerid, AscX, AscY, ASC_PlayerZFall[playerid]);
+	ASC_PlayerZFall[playerid] = AscZ;
 	return 1;
 }
 
@@ -161,7 +163,7 @@ static ASC_IsAPlane(vehicleid)
 
 static ASC_GetPlayerSpeed(playerid)
 {
-	new Float:ST[4];
+    new Float:ST[4];
     if(IsPlayerInAnyVehicle(playerid))
     GetVehicleVelocity(GetPlayerVehicleID(playerid),ST[0],ST[1],ST[2]);
     else GetPlayerVelocity(playerid,ST[0],ST[1],ST[2]);
@@ -184,3 +186,5 @@ static ASC_GetPlayerSpeed(playerid)
 #endif
 
 #define OnPlayerDisconnect ASC_OnPlayerDisconnect
+
+#endif

@@ -11,11 +11,20 @@ Callbacks:
 -=-=-=-=Usable Defenitions:-=-=-=-=
 USE THIS BEFORE THE INCLUDE IF YOU CANCEL THE ORIGINAL SAMP INTERIORS (INCLUDING MOD GARAGES!) TO AVOID EXTRA CHECKS!
 #define OPBA_CUSTOM_INTERIORS 
+
 if you don't, use this to define maximum interiors you use:
 #define OPBA_MAX_INTERIORS [number]
+
 If you don't want to use the callback it will auto kick,
 If you want it to ban you can use:
 #define OPBA_BAN_VERSION
+
+breaktype 1: airbreak on foot.
+breaktype 2: airbreak as driver.
+breaktype 3: airbreak as passenger.
+breaktype 4: teleport on foot.
+breaktype 5: teleport as driver.
+breaktype 6: teleport as passenger.
 */
 
 #if defined r_BreakAir_ 
@@ -60,10 +69,13 @@ forward OPBA_SafeReset();
 
 #define OPBA_TP_DELAY_TIME	  1900
 #define OPBA_AB_TICKS 		  2
+#define OPBA_MAX_ABUSES 	  2
 #define OPBA_TELEPORT_RANGE   92.0
 #define OPBA_ONFOOT_DETECTION 22.0
 #define OPBA_INVEHI_DETECTION 27.0
 #define OPBA_MAX_DETECT_SPEED 30.0
+#define OPBA_MAX_PASS_RANGE   40.0
+
 #define OPBA_RESET_TIME 3000
 
 #if defined _FLaggersIncluded_
@@ -150,7 +162,8 @@ enum E_OPBA_PLAYER_DATA
 	bool:RacVDeath,
 	bool:RacVRspwn,
 	bool:RacHoldCheck,
-	
+	bool:RacPassFall,
+
 	RacSurf,
     RacPause,
 	RacABTicks,
@@ -158,6 +171,7 @@ enum E_OPBA_PLAYER_DATA
 	RacFallBug,
 	RacCarFall,
 	RacPlayerInt,
+	RacPassFallAbuse,
 
 	Float:RacX,
 	Float:RacY,
@@ -180,6 +194,7 @@ enum E_OPBA_PLAYER_DATA
 	bool:RacPassenger,
 	bool:RacPBFix,
 	bool:RacVDeath,
+	bool:RacPassFall,
 
 	RacSurf,
 	RacPause,
@@ -187,6 +202,7 @@ enum E_OPBA_PLAYER_DATA
 	RacPauseTicks,
 	RacFallBug,
 	RacCarFall,
+	RacPassFallAbuse,
 
 	Float:RacX,
 	Float:RacY,
@@ -245,6 +261,20 @@ public OPBA_AirbrakeTeleport(playerid)
 
 	new Float:OPBA_X, Float:OPBA_Y, Float:OPBA_Z;
 	GetVehiclePos(OPBA_Vehicle, OPBA_X, OPBA_Y, OPBA_Z);
+
+	if(OPBA_Player[playerid][RacPassFallAbuse] < OPBA_MAX_ABUSES)
+	{
+		if(GetPlayerState(playerid) == PLAYER_STATE_PASSENGER)
+		{
+			new Float:OPBA_PX, Float:OPBA_PY, Float:OPBA_PZ;
+			GetPlayerPos(playerid, OPBA_PX, OPBA_PY, OPBA_PZ);
+			if(OPBA_PZ > 0 && OPBA_Player[playerid][RacZ] > 0 && OPBA_Player[playerid][RacZ] > OPBA_PZ + 3 && OPBA_Player[playerid][RacZ] - OPBA_PZ >= 0 && !OPBA_Player[playerid][RacPassFall])
+			{
+				OPBA_Player[playerid][RacPassFall] = true;
+			}
+			else if(OPBA_Player[playerid][RacPassFall]) OPBA_Player[playerid][RacPassFall] = false, OPBA_Player[playerid][RacPassFallAbuse]++;
+		}
+	}
 
 	if(OPBA_Player[playerid][RacZ] > OPBA_Z && OPBA_Player[playerid][RacZ] < 0 && OPBA_Z < 0 && OPBA_Player[playerid][RacCarFall] == 0 && IsPlayerInAnyVehicle(playerid))
 	{
@@ -583,11 +613,9 @@ public OPBA_AirbrakeTeleport(playerid)
 			}
 			case 3:
 			{
-	 			if(OPBA_VOwner[OPBA_Vehicle] == INVALID_PLAYER_ID)
+	 			if(OPBA_VOwner[OPBA_Vehicle] == INVALID_PLAYER_ID && !OPBA_Player[playerid][RacPassFall] && !OPBA_Player[playerid][RacVDeath])
 				{
-					if(OPBA_Player[playerid][RacVDeath]) return GetPlayerPos(playerid, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]);
 					#if !defined OPBA_CUSTOM_INTERIORS
-
 					if(!IsPlayerInRangeOfPoint(playerid, OPBA_TELEPORT_RANGE, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_PInteriors[playerid][OpbaTempInt])
 					{
 						#if defined OnPlayerBreakAir
@@ -610,7 +638,7 @@ public OPBA_AirbrakeTeleport(playerid)
 						SetTimerEx("OPBA_DelayCall", 250, false, "i", playerid);
 						#endif
 					}
-					else if(!IsPlayerInRangeOfPoint(playerid, OPBA_INVEHI_DETECTION, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_PInteriors[playerid][OpbaTempInt])
+					else if(!IsPlayerInRangeOfPoint(playerid, OPBA_MAX_PASS_RANGE, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]) && OPBA_PInteriors[playerid][OpbaTempInt])
 					{
 						if(OPBA_Player[playerid][RacABTicks] == 0) 
 						{
@@ -665,7 +693,7 @@ public OPBA_AirbrakeTeleport(playerid)
 						SetTimerEx("OPBA_DelayCall", 250, false, "i", playerid);
 						#endif
 					}
-					else if(!IsPlayerInRangeOfPoint(playerid, OPBA_INVEHI_DETECTION, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]))
+					else if(!IsPlayerInRangeOfPoint(playerid, OPBA_MAX_PASS_RANGE, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]))
 					{
 						if(OPBA_Player[playerid][RacABTicks] == 0) 
 						{
@@ -703,13 +731,14 @@ public OPBA_AirbrakeTeleport(playerid)
 		}
 	}
 	
-	GetPlayerPos(playerid, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]);
+	if(!OPBA_Player[playerid][RacHoldCheck]) GetPlayerPos(playerid, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]);
 	return 1;
 }
 
 #if defined OnPlayerBreakAir
 public OPBA_CheckRealTP(playerid, tpcode)
 {
+	if(tpcode == 4 && OPBA_IsPEnExCar(playerid)) return OPBA_Player[playerid][RacHoldCheck] = false;
 	if(!OPBA_Player[playerid][RacProtecInt] && !IsPlayerInRangeOfPoint(playerid, OPBA_TELEPORT_RANGE, OPBA_Player[playerid][RacX], OPBA_Player[playerid][RacY], OPBA_Player[playerid][RacZ]))
 	{
 		OnPlayerBreakAir(playerid, tpcode);
@@ -965,9 +994,8 @@ public OnPlayerStateChange(playerid, newstate, oldstate)
 
 public OnPlayerDisconnect(playerid, reason)
 { 
-	OPBA_Player[playerid][RacSurf] = 0;
+
 	KillTimer(OPBA_Player[playerid][RacRTPTimer]);
-	OPBA_Player[playerid][RacABTicks] = 0;
 	#if defined _FLaggersIncluded_
 	OPBA_PlayerDelayer{playerid} = false;
 	if(OPBA_PLagTimer[playerid] != -1) 
@@ -995,6 +1023,8 @@ public OnPlayerDisconnect(playerid, reason)
 
 	if(GetPlayerState(playerid) == 2) OPBA_VOwner[GetPlayerVehicleID(playerid)] = INVALID_PLAYER_ID;
 
+	OPBA_Player[playerid][RacHoldCheck]		  = false;
+	OPBA_Player[playerid][RacPassFall] 		  = false;
 	OPBA_Player[playerid][RacVRspwn]		  = false;
 	OPBA_Player[playerid][RacVDeath]		  = false;
 	OPBA_Player[playerid][RacPassenger] 	  = false;
@@ -1005,7 +1035,9 @@ public OnPlayerDisconnect(playerid, reason)
 	OPBA_Player[playerid][RacFallBug] 		  = 0;
 	OPBA_Player[playerid][RacPause] 		  = 0;
 	OPBA_Player[playerid][RacCarFall]         = 0;
-	OPBA_Player[playerid][RacHoldCheck]= false;
+	OPBA_Player[playerid][RacABTicks] 		  = 0;
+	OPBA_Player[playerid][RacPassFallAbuse]   = 0;
+	OPBA_Player[playerid][RacSurf] 			  = 0;	
 
 	#if !defined OPBA_CUSTOM_INTERIORS
 	OPBA_Player[playerid][RacProtecInt] = false;
@@ -1111,70 +1143,18 @@ public OnPlayerUpdate(playerid)
 		#endif
 }
 
-static OPBA_memset(aArray[], iValue, iSize = sizeof(aArray)) {//by Slice
-	new
-		iAddress
-	;
-	
-	// Store the address of the array
-	#emit LOAD.S.pri 12
-	#emit STOR.S.pri iAddress
-	
-	// Convert the size from cells to bytes
-	iSize *= 4;
-	
-	// Loop until there is nothing more to fill
-	while (iSize > 0) {
-		// I have to do this because the FILL instruction doesn't accept a dynamic number.
-		if (iSize >= 4096) {
-			#emit LOAD.S.alt iAddress
-			#emit LOAD.S.pri iValue
-			#emit FILL 4096
-		
-			iSize    -= 4096;
-			iAddress += 4096;
-		} else if (iSize >= 1024) {
-			#emit LOAD.S.alt iAddress
-			#emit LOAD.S.pri iValue
-			#emit FILL 1024
-
-			iSize    -= 1024;
-			iAddress += 1024;
-		} else if (iSize >= 256) {
-			#emit LOAD.S.alt iAddress
-			#emit LOAD.S.pri iValue
-			#emit FILL 256
-
-			iSize    -= 256;
-			iAddress += 256;
-		} else if (iSize >= 64) {
-			#emit LOAD.S.alt iAddress
-			#emit LOAD.S.pri iValue
-			#emit FILL 64
-
-			iSize    -= 64;
-			iAddress += 64;
-		} else if (iSize >= 16) {
-			#emit LOAD.S.alt iAddress
-			#emit LOAD.S.pri iValue
-			#emit FILL 16
-
-			iSize    -= 16;
-			iAddress += 16;
-		} else {
-			#emit LOAD.S.alt iAddress
-			#emit LOAD.S.pri iValue
-			#emit FILL 4
-
-			iSize    -= 4;
-			iAddress += 4;
-		}
-	}
-	
-	// aArray is used, just not by its symbol name
-	#pragma unused aArray
+static stock OPBA_IsPEnExCar(playerid)
+{
+    switch(GetPlayerAnimationIndex(playerid))
+    {
+        case 1010..1012: return 1;
+        case 1024..1025: return 1;
+        case 1043..1045: return 1;
+        case 1009, 1041: return 1;
+    }
+    if(GetPlayerSpecialAction(playerid) == SPECIAL_ACTION_ENTER_VEHICLE) return 1;
+    return 0;
 }
-
 static OPBA_GetPlayerSpeed(playerid)
 {
     new Float:ST[4];
@@ -1214,8 +1194,8 @@ static OPBA_LagInit()
 static stock OPBA_TogglePlayerLag(playerid, bool:toggle, lag_delay = 3000) 
 {
 	#if !defined BlockIpAddress
-	new
-	    OPBA_String[32];
+	new 
+		Opba_Temp_string[32];
 	#endif
 	
 	if(toggle) 
@@ -1226,8 +1206,8 @@ static stock OPBA_TogglePlayerLag(playerid, bool:toggle, lag_delay = 3000)
 	#if defined BlockIpAddress
 	    BlockIpAddress(OPBA_PLagIP[playerid], lag_delay);
 	#else
-		format(temp_String, sizeof(temp_String), "banip %s", OPBA_PLagIP[playerid]);
-		SendRconCommand(temp_String);
+		format(Opba_Temp_string, sizeof(Opba_Temp_string), "banip %s", OPBA_PLagIP[playerid]);
+		SendRconCommand(Opba_Temp_string);
 	#endif
 		OPBA_PLagTimer[playerid] = SetTimerEx("L_LagPlayer", lag_delay, true, "dd", playerid, lag_delay);
 	}
@@ -1242,8 +1222,8 @@ static stock OPBA_TogglePlayerLag(playerid, bool:toggle, lag_delay = 3000)
 	#if defined BlockIpAddress
 	    UnBlockIpAddress(OPBA_PLagIP[playerid]);
 	#else
-		format(temp_String, sizeof(temp_String), "unbanip %s", OPBA_PLagIP[playerid]);
-		SendRconCommand(temp_String);
+		format(Opba_Temp_string, sizeof(Opba_Temp_string), "unbanip %s", OPBA_PLagIP[playerid]);
+		SendRconCommand(Opba_Temp_string);
 	#endif
 	}
 	return 1;
@@ -1464,3 +1444,67 @@ stock OPBA_FTogglePlayerSpectating(playerid, toggle)
 #define TogglePlayerSpectating OPBA_FTogglePlayerSpectating
 
 #endif
+
+static stock OPBA_memset(aArray[], iValue, iSize = sizeof(aArray)) {//by Slice
+	new
+		iAddress
+	;
+	
+	// Store the address of the array
+	#emit LOAD.S.pri 12
+	#emit STOR.S.pri iAddress
+	
+	// Convert the size from cells to bytes
+	iSize *= 4;
+	
+	// Loop until there is nothing more to fill
+	while (iSize > 0) {
+		// I have to do this because the FILL instruction doesn't accept a dynamic number.
+		if (iSize >= 4096) {
+			#emit LOAD.S.alt iAddress
+			#emit LOAD.S.pri iValue
+			#emit FILL 4096
+		
+			iSize    -= 4096;
+			iAddress += 4096;
+		} else if (iSize >= 1024) {
+			#emit LOAD.S.alt iAddress
+			#emit LOAD.S.pri iValue
+			#emit FILL 1024
+
+			iSize    -= 1024;
+			iAddress += 1024;
+		} else if (iSize >= 256) {
+			#emit LOAD.S.alt iAddress
+			#emit LOAD.S.pri iValue
+			#emit FILL 256
+
+			iSize    -= 256;
+			iAddress += 256;
+		} else if (iSize >= 64) {
+			#emit LOAD.S.alt iAddress
+			#emit LOAD.S.pri iValue
+			#emit FILL 64
+
+			iSize    -= 64;
+			iAddress += 64;
+		} else if (iSize >= 16) {
+			#emit LOAD.S.alt iAddress
+			#emit LOAD.S.pri iValue
+			#emit FILL 16
+
+			iSize    -= 16;
+			iAddress += 16;
+		} else {
+			#emit LOAD.S.alt iAddress
+			#emit LOAD.S.pri iValue
+			#emit FILL 4
+
+			iSize    -= 4;
+			iAddress += 4;
+		}
+	}
+	
+	// aArray is used, just not by its symbol name
+	#pragma unused aArray
+}

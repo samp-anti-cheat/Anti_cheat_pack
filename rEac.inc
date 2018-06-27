@@ -1,5 +1,5 @@
 /*Anti car swing, particle spam and fixes breached boundaries.
-Updated: FEB 18th
+Updated: June 27th.
 -=-==-=-=-=-==
 Originally made by Lorenc_ (Extracted/Reposted & edited by Rogue)
 -=-=-=-=
@@ -144,6 +144,7 @@ public OnVehicleDamageStatusUpdate(vehicleid, playerid)
             EAC_Player[playerid][EacSpamC] ++;
             if(EAC_Player[playerid][EacSpamC] >= 10)
             {
+                EAC_Player[playerid][EacSpamC] = 0;
                 #if defined OnPlayerParticleSpam
                 OnPlayerParticleSpam(playerid, vehicleid);
                 #endif
@@ -189,6 +190,7 @@ public OnPlayerUpdate(playerid)
             OnPlayerCarSwing(playerid, EacTempSCar);
             #endif
             SetPlayerHealth(playerid, 0.0);
+            SetVehicleToRespawn(EacTempSCar);
         }
     }
         #if defined EAC_OnPlayerUpdate

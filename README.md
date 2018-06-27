@@ -7,6 +7,8 @@
 >
 > UPDATED: June 27th - 2018
 >
+> Original repository: https://github.com/RogueDrifter/Anti_cheat_pack
+>
 > `## Installation`: You simply include the files in your gamemode/fs depending
 >on the include's setup (some require include in all scripts and only edit through
 > the gamemode, others can be used in one script alone).

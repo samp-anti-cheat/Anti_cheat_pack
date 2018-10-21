@@ -5,7 +5,7 @@
 >This is a pack of 12 anticheats and 3 helping systems which you can control through callbacks mentioned
 >in the includes and the test.pwn file.
 >
-> UPDATED: June 27th - 2018
+> UPDATED: Oct 21st - 2018
 >
 > Original repository: https://github.com/RogueDrifter/Anti_cheat_pack
 >
@@ -67,8 +67,6 @@ sampctl package run
 
 >rAcs //Anti car spam - Rogue
 
->rED  //Anti dialog spoof/crash- Emmet_ (easyDialog)
-
 *Includes that provide spam/bug protection (not worth a ban)
 >AntiSpam //Anti chat spam- Rogue
 
@@ -80,6 +78,8 @@ sampctl package run
 >AntiJC //Anti jetpack cheats- Rogue
 
 >Opba //Anti airbreak\teleport - Rogue
+
+>rAGM //Anti godmode - Rogue
 
 >rAgc //Anti gun cheats -Rogue
 

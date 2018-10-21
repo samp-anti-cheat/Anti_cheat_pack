@@ -99,16 +99,3 @@ Simply open your project and run the code:
 ```bash
 sampctl package ensure
 ```
-
-## Non sampctl users:
-Go get sampctl! 
-
-But for now:
-
-1- Download the repository.  
-2- Take all of the .inc files and put them in your pawno/include.  
-3- Open all your filterscripts, use #include <Anti_cheat_pack> right after #include a_samp.  
-4- Open your gamemode and type the same line as above^.  
-5- Keep your gamemode open and use the callbacks from the post as examples to will.  
-
-And that's about it! every time i announce a new version release just re-do those steps above.
